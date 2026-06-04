@@ -1,0 +1,10 @@
+[
+    {
+        "date": "04-06-2026 14:24",
+        "health_score": 100.0,
+        "severity": "Normal",
+        "predicted_rul": 49055.81640625,
+        "adjusted_km": 49055.82,
+        "risk_level": "LOW"
+    }
+]
