@@ -25,18 +25,26 @@ severity_model = None
 if not MOCK_YOLO:
     try:
         from ultralytics import YOLO
-        detector_model = YOLO(
-            str(MODELS_DIR / "detector.pt")
-        )
-        health_model = YOLO(
-            str(MODELS_DIR / "health.pt")
-        )
-        severity_model = YOLO(
-            str(MODELS_DIR / "severity.pt")
-        )
+        
+        detector_path = MODELS_DIR / "detector.pt"
+        if not detector_path.exists():
+            detector_path = BASE_DIR / "detector.pt"
+            
+        health_path = MODELS_DIR / "health.pt"
+        if not health_path.exists():
+            health_path = BASE_DIR / "health.pt"
+            
+        severity_path = MODELS_DIR / "severity.pt"
+        if not severity_path.exists():
+            severity_path = BASE_DIR / "severity.pt"
+
+        detector_model = YOLO(str(detector_path))
+        health_model = YOLO(str(health_path))
+        severity_model = YOLO(str(severity_path))
     except ImportError:
         print("Ultralytics not installed. Falling back to mock mode.")
         MOCK_YOLO = True
+
 
 # ==========================================
 # HEALTH SCORE

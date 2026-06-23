@@ -9,6 +9,8 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RUL_MODEL_PATH = BASE_DIR / "models" / "rul_model.pkl"
+if not RUL_MODEL_PATH.exists():
+    RUL_MODEL_PATH = BASE_DIR / "rul_model.pkl"
 
 # ==========================================
 # LOAD RUL MODEL

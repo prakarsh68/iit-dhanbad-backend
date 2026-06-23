@@ -1,3 +1,13 @@
+---
+title: IIT Project API
+emoji: 🚗
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # AI Tyre Health Inspection System
 
 Developed at IIT Dhanbad
