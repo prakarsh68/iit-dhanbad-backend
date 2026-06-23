@@ -20,6 +20,13 @@ Developed at IIT Dhanbad
 
 ## Run
 
+```bash
 pip install -r requirements.txt
-
 streamlit run scripts/dashboard.py
+```
+
+## Deployment
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/prakarsh68/iit-dhanbad-backend)
+
+Click the button above to deploy this FastAPI backend to Render. The configuration is automatically loaded from `render.yaml`.
