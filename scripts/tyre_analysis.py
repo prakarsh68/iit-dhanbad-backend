@@ -9,6 +9,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
 
+OUTPUT_DIR = BASE_DIR / "data"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
 # ==========================================
 # LOAD MODELS
 # ==========================================
@@ -285,7 +288,7 @@ def analyze_image(image_path):
         x["health_score"]
     )
 
-    # ======================================
+       # ======================================
     # DRAW BOUNDING BOXES
     # ======================================
 
@@ -326,6 +329,23 @@ def analyze_image(image_path):
             2
         )
 
+    # ======================================
+    # SAVE IMAGES FOR DIGITAL TWIN
+    # ======================================
+
+    input_path = OUTPUT_DIR / "latest_input.jpg"
+    output_path = OUTPUT_DIR / "latest_output.jpg"
+
+    cv2.imwrite(
+        str(input_path),
+        image
+    )
+
+    cv2.imwrite(
+        str(output_path),
+        annotated_image
+    )
+
     return {
 
         "num_tyres":
@@ -341,6 +361,12 @@ def analyze_image(image_path):
             worst_tyre[
                 "severity_label"
             ],
+
+        "input_image":
+            str(input_path),
+
+        "output_image":
+            str(output_path),
 
         "annotated_image":
             annotated_image,

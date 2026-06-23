@@ -282,14 +282,27 @@ if st.button("Analyze Tyres"):
         )
 
         save_inspection(
-            
             health_score=health_score,
             severity=severity,
             predicted_rul=predicted_rul,
             adjusted_km=adjusted_km,
-            risk_level=risk_level
+            risk_level=risk_level,
+            risk_score=risk_score,
+            vehicle_type=vehicle_type,
+            
+            temperature=user_data
+            [
+                "average_tread_temperature(celsius)"
+            ],
+            
+            pressure=user_data
+            [
+                "average_inflation_pressure(psi)"
+            ],
+            
+            defect=severity,
+            recommendations=recommendations
         )
-        
 
         # ==================================
         # RESULTS

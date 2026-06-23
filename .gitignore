@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 outputs/
+.venv/
+data/latest_*
+latest_report.pdf
