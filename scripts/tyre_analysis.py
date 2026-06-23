@@ -1,4 +1,4 @@
-from ultralytics import YOLO
+import os
 import cv2
 from pathlib import Path
 
@@ -13,20 +13,30 @@ OUTPUT_DIR = BASE_DIR / "data"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # ==========================================
-# LOAD MODELS
+# LOAD MODELS (CONDITIONAL)
 # ==========================================
 
-detector_model = YOLO(
-    str(MODELS_DIR / "detector.pt")
-)
+MOCK_YOLO = os.environ.get("MOCK_YOLO", "false").lower() == "true"
 
-health_model = YOLO(
-    str(MODELS_DIR / "health.pt")
-)
+detector_model = None
+health_model = None
+severity_model = None
 
-severity_model = YOLO(
-    str(MODELS_DIR / "severity.pt")
-)
+if not MOCK_YOLO:
+    try:
+        from ultralytics import YOLO
+        detector_model = YOLO(
+            str(MODELS_DIR / "detector.pt")
+        )
+        health_model = YOLO(
+            str(MODELS_DIR / "health.pt")
+        )
+        severity_model = YOLO(
+            str(MODELS_DIR / "severity.pt")
+        )
+    except ImportError:
+        print("Ultralytics not installed. Falling back to mock mode.")
+        MOCK_YOLO = True
 
 # ==========================================
 # HEALTH SCORE
@@ -78,48 +88,176 @@ def analyze_image(image_path):
             f"Image not found: {image_path}"
         )
 
-    results = detector_model(
-        image,
-        conf=0.25,
-        verbose=False
-    )
+    if MOCK_YOLO:
+        path_str = str(image_path).lower()
+        if "front_left" in path_str:
+            health_label = "normal"
+            severity_label = "Normal"
+            health_score = 92
+        elif "front_right" in path_str:
+            health_label = "normal"
+            severity_label = "Normal"
+            health_score = 90
+        elif "rear_left" in path_str:
+            health_label = "damaged"
+            severity_label = "Moderate"
+            health_score = 58
+        elif "rear_right" in path_str:
+            health_label = "damaged"
+            severity_label = "Minor"
+            health_score = 82
+        else:
+            health_label = "normal"
+            severity_label = "Normal"
+            health_score = 95
 
-    tyres = []
+        h, w, _ = image.shape
+        x1, y1, x2, y2 = int(w * 0.15), int(h * 0.15), int(w * 0.85), int(h * 0.85)
 
-    for result in results:
+        tyre_info = {
+            "health_label": health_label,
+            "health_conf": 0.92,
+            "severity_label": severity_label,
+            "severity_conf": 0.88,
+            "health_score": health_score,
+            "bbox": [x1, y1, x2, y2]
+        }
+        tyres = [tyre_info]
+        avg_health_score = health_score
+        worst_tyre = tyre_info
+    else:
+        results = detector_model(
+            image,
+            conf=0.25,
+            verbose=False
+        )
 
-        boxes = result.boxes
+        tyres = []
 
-        for box in boxes:
+        for result in results:
 
-            x1, y1, x2, y2 = map(
-                int,
-                box.xyxy[0]
-            )
+            boxes = result.boxes
 
-            tyre_crop = image[
-                y1:y2,
-                x1:x2
-            ]
+            for box in boxes:
 
-            if tyre_crop.size == 0:
-                continue
+                x1, y1, x2, y2 = map(
+                    int,
+                    box.xyxy[0]
+                )
 
-            # ===============================
-            # HEALTH
-            # ===============================
+                tyre_crop = image[
+                    y1:y2,
+                    x1:x2
+                ]
+
+                if tyre_crop.size == 0:
+                    continue
+
+                # ===============================
+                # HEALTH
+                # ===============================
+
+                health_result = health_model(
+                    tyre_crop,
+                    verbose=False
+                )[0]
+
+                health_id = int(
+                    health_result.probs.top1
+                )
+
+                health_conf = float(
+                    health_result.probs.top1conf
+                )
+
+                health_label = (
+                    health_model.names[
+                        health_id
+                    ]
+                )
+
+                # ===============================
+                # DEFAULTS
+                # ===============================
+
+                severity_label = "Normal"
+                severity_conf = 1.0
+
+                score = 100
+
+                # ===============================
+                # SEVERITY
+                # ===============================
+
+                if health_label.lower() == "damaged":
+
+                    severity_result = (
+                        severity_model(
+                            tyre_crop,
+                            verbose=False
+                        )[0]
+                    )
+
+                    severity_id = int(
+                        severity_result.probs.top1
+                    )
+
+                    severity_conf = float(
+                        severity_result.probs.top1conf
+                    )
+
+                    severity_label = (
+                        severity_model.names[
+                            severity_id
+                        ]
+                    )
+
+                    score = (
+                        calculate_health_score(
+                            health_label,
+                            severity_label,
+                            severity_conf
+                        )
+                    )
+
+                tyre_info = {
+
+                    "health_label":
+                        health_label,
+
+                    "health_conf":
+                        health_conf,
+
+                    "severity_label":
+                        severity_label,
+
+                    "severity_conf":
+                        severity_conf,
+
+                    "health_score":
+                        score,
+
+                    "bbox":
+                        [x1, y1, x2, y2]
+                }
+
+                tyres.append(
+                    tyre_info
+                )
+
+        # ======================================
+        # FALLBACK
+        # ======================================
+
+        if len(tyres) == 0:
 
             health_result = health_model(
-                tyre_crop,
+                image,
                 verbose=False
             )[0]
 
             health_id = int(
                 health_result.probs.top1
-            )
-
-            health_conf = float(
-                health_result.probs.top1conf
             )
 
             health_label = (
@@ -128,24 +266,15 @@ def analyze_image(image_path):
                 ]
             )
 
-            # ===============================
-            # DEFAULTS
-            # ===============================
-
-            severity_label = "Normal"
-            severity_conf = 1.0
-
             score = 100
 
-            # ===============================
-            # SEVERITY
-            # ===============================
+            severity_label = "Normal"
 
             if health_label.lower() == "damaged":
 
                 severity_result = (
                     severity_model(
-                        tyre_crop,
+                        image,
                         verbose=False
                     )[0]
                 )
@@ -154,14 +283,14 @@ def analyze_image(image_path):
                     severity_result.probs.top1
                 )
 
-                severity_conf = float(
-                    severity_result.probs.top1conf
-                )
-
                 severity_label = (
                     severity_model.names[
                         severity_id
                     ]
+                )
+
+                severity_conf = float(
+                    severity_result.probs.top1conf
                 )
 
                 score = (
@@ -172,121 +301,37 @@ def analyze_image(image_path):
                     )
                 )
 
-            tyre_info = {
+            tyres.append({
 
                 "health_label":
                     health_label,
 
                 "health_conf":
-                    health_conf,
+                    1.0,
 
                 "severity_label":
                     severity_label,
-
-                "severity_conf":
-                    severity_conf,
+            
+                "severity_conf":                
+                    1.0,
 
                 "health_score":
                     score,
 
                 "bbox":
-                    [x1, y1, x2, y2]
-            }
+                    None
+            })
 
-            tyres.append(
-                tyre_info
-            )
+        avg_health_score = sum(
+            t["health_score"]
+            for t in tyres
+        ) / len(tyres)
 
-    # ======================================
-    # FALLBACK
-    # ======================================
-
-    if len(tyres) == 0:
-
-        health_result = health_model(
-            image,
-            verbose=False
-        )[0]
-
-        health_id = int(
-            health_result.probs.top1
+        worst_tyre = min(
+            tyres,
+            key=lambda x:
+            x["health_score"]
         )
-
-        health_label = (
-            health_model.names[
-                health_id
-            ]
-        )
-
-        score = 100
-
-        severity_label = "Normal"
-
-        if health_label.lower() == "damaged":
-
-            severity_result = (
-                severity_model(
-                    image,
-                    verbose=False
-                )[0]
-            )
-
-            severity_id = int(
-                severity_result.probs.top1
-            )
-
-            severity_label = (
-                severity_model.names[
-                    severity_id
-                ]
-            )
-
-            severity_conf = float(
-                severity_result.probs.top1conf
-            )
-
-            score = (
-                calculate_health_score(
-                    health_label,
-                    severity_label,
-                    severity_conf
-                )
-            )
-
-        tyres.append({
-
-            "health_label":
-                health_label,
-
-            "health_conf":
-                1.0,
-
-            "severity_label":
-                severity_label,
-        
-            "severity_conf":                
-                1.0,
-
-            "health_score":
-                score,
-
-            "bbox":
-                None
-        })
-    # ======================================
-    # SUMMARY
-    # ======================================
-
-    avg_health_score = sum(
-        t["health_score"]
-        for t in tyres
-    ) / len(tyres)
-
-    worst_tyre = min(
-        tyres,
-        key=lambda x:
-        x["health_score"]
-    )
 
        # ======================================
     # DRAW BOUNDING BOXES

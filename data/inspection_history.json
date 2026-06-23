@@ -558,5 +558,21 @@
             "Replace tyre immediately.",
             "Severe tyre degradation detected."
         ]
+    },
+    {
+        "date": "24-06-2026 02:33",
+        "health_score": 92.0,
+        "severity": "Normal",
+        "predicted_rul": 49409.33984375,
+        "adjusted_km": 49409.34,
+        "risk_level": "LOW",
+        "risk_score": 8,
+        "vehicle_type": "Sedan",
+        "temperature": 22,
+        "pressure": 32.0,
+        "defect": "Normal",
+        "recommendations": [
+            "Tyre condition is healthy."
+        ]
     }
 ]
