@@ -574,5 +574,38 @@
         "recommendations": [
             "Tyre condition is healthy."
         ]
+    },
+    {
+        "date": "29-06-2026 13:01",
+        "health_score": 90.0,
+        "severity": "Normal",
+        "predicted_rul": 11252.265625,
+        "adjusted_km": 10689.65,
+        "risk_level": "MEDIUM",
+        "risk_score": 30.0,
+        "vehicle_type": "Sedan",
+        "temperature": 22,
+        "pressure": 30.0,
+        "defect": "Normal",
+        "recommendations": [
+            "Monitor tyre condition regularly."
+        ]
+    },
+    {
+        "date": "29-06-2026 13:01",
+        "health_score": 40.0,
+        "severity": "Moderate",
+        "predicted_rul": 11252.265625,
+        "adjusted_km": 10689.65,
+        "risk_level": "CRITICAL",
+        "risk_score": 95.0,
+        "vehicle_type": "Sedan",
+        "temperature": 22,
+        "pressure": 30.0,
+        "defect": "Moderate",
+        "recommendations": [
+            "Replace tyre immediately.",
+            "Moderate tyre damage detected."
+        ]
     }
 ]
